@@ -34,7 +34,7 @@ jobs:
       ART_KEY: ${{ secrets.art_key }}
     steps:
       - name: Run action
-        uses: MetOffice/action-setup-artifactory@add-action
+        uses: MetOffice/action-setup-artifactory@v2
 
       - name: Setup Python
         uses: actions/setup-python@v2

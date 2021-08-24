@@ -1,0 +1,34 @@
+name: Setup Artifactory
+author: Payton Leedham
+inputs:
+  username:
+    description: Artifactory username
+    required: true
+    default: $ART_USER
+
+  api-key:
+    description: Artifactory API key
+    required: true
+    default: $ART_KEY
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create netrc file
+      shell: bash
+      run: |
+        cat << EOF > ~/.netrc
+        machine metoffice.jfrog.io
+        login ${{ inputs.username }}
+        password ${{ inputs.api-key }}
+        EOF
+
+    - name: Create pip file
+      shell: bash
+      run: |
+        mkdir -p ~/.config/pip
+        cat << EOF > ~/.config/pip/pip.conf
+        [global]
+        index-url = https://metoffice.jfrog.io/metoffice/api/pypi/pypi/simple
+        trusted-host = metoffice.jfrog.io
+        EOF

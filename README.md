@@ -8,6 +8,8 @@ communication with Artifactory for Python:
 * ``~/condarc`` - Add the ``channel_alias`` to point to Artifactory for conda.
 * ``~/.config/pip/pip.conf`` - Add the ``index-url`` to point to Artifactory for pip.
 
+| Filw                       | Reason                                                       |
+| -------------------------- | ------------------------------------------------------------ |
 | ``~/.netrc``               | Add the provided Artifactory credentials                     |
 | ``~/condarc``              | Add the ``channel_alias`` to point to Artifactory for conda. |
 | ``~/.config/pip/pip.conf`` | Add the ``index-url`` to point to Artifactory for pip.       |

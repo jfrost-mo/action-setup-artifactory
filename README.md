@@ -27,9 +27,9 @@ Usage
     api-key: ''
 
     # Authentication credentials check.
-    # Confirms that username and api=key are active and working.
+    # Confirms that username and api-key are active and working.
     # Default: false
-    creds-check: ''
+    check-creds: ''
 
 ```
 
@@ -89,7 +89,7 @@ jobs:
       - name: Set up Artifactory connection
         uses: MetOffice/action-setup-artifactory@v1
         with:
-          creds-check: true
+          check-creds: true
 
       - name: Set up Python
         uses: actions/setup-python@v2

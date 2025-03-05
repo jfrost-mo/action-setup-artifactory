@@ -25,6 +25,12 @@ Usage
     # with either username/password or SSO.
     # Default: ${{ secrets.ART_KEY}}
     api-key: ''
+
+    # Authentication credentials check.
+    # Confirms that username and api=key are active and working.
+    # Default: false
+    creds-check: ''
+
 ```
 
 Examples
@@ -63,6 +69,27 @@ jobs:
         with:
           username: ${{ secrets.USERNAME }}
           api-key: ${{ secrets.API_KEY }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+      - name: Install Package from Artifactory
+        run: pip install some-package-on-artifactory
+```
+
+Configure Artifactory with a check that authentication credentials are active
+
+```yaml
+jobs:
+  my-job:
+    steps:
+        # Specifying creds-check to verify authentication
+      - name: Set up Artifactory connection
+        uses: MetOffice/action-setup-artifactory@v1
+        with:
+          creds-check: true
 
       - name: Set up Python
         uses: actions/setup-python@v2

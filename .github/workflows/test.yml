@@ -17,6 +17,7 @@ jobs:
         with:
           username: $ART_USER
           api-key: $ART_KEY
+          check-creds: true
 
       - name: Setup Python
         uses: actions/setup-python@v2

@@ -11,6 +11,12 @@ inputs:
     required: true
     default: $ART_KEY
 
+  check-creds:
+    description: Optional check credentials status
+    required: true
+    default: false
+
+
 runs:
   using: "composite"
   steps:
@@ -44,3 +50,21 @@ runs:
         index-url = https://metoffice.jfrog.io/metoffice/api/pypi/pypi/simple
         trusted-host = metoffice.jfrog.io
         EOF
+
+    - name: Check Artifactory authentication
+      if: ${{ inputs.check-creds == 'true' }}
+      run: |
+        echo "Testing authentication to Artifactory"
+        # Check  and capture numerical status code
+        url="https://metoffice.jfrog.io/metoffice/api/conda/conda-forge"
+        status=$(curl -n -I --write-out %{http_code} --silent --output /dev/null ${url} 
+        echo "MO JFrog Artifactory returned: ${status}"
+        # if connection and authentication work, then expect a 200 code
+        if [ $status != "200" ]; then
+        # connection or authentication problems
+        echo "Check authentication file, password expiry or user settings"
+        exit 1
+        else
+        echo "Server returned: ${status}"
+        echo "Artifactory connection ok, continuing"
+        fi

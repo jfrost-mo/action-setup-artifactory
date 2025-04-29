@@ -1,16 +1,6 @@
 name: Setup Artifactory
 author: Payton Leedham
 inputs:
-  username:
-    description: Artifactory username
-    required: true
-    default: ${{ secrets.art_user }}
-
-  api-key:
-    description: Artifactory API key
-    required: true
-    default: ${{ secrets.art_key }}
-
   check-creds:
     description: Optional check credentials status
     required: true
@@ -25,8 +15,8 @@ runs:
       run: |
         cat << EOF > ~/.netrc
         machine metoffice.jfrog.io
-        login ${{ inputs.username }}
-        password ${{ inputs.api-key }}
+        login ${{ secrets.art_user }}
+        password ${{ secrets.art_key }}
         EOF
 
     - name: Add the conda channel_alias for Artifactory

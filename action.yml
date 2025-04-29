@@ -4,12 +4,12 @@ inputs:
   username:
     description: Artifactory username
     required: true
-    default: $ART_USER
+    default: ${{ secrets.art_user }}
 
   api-key:
     description: Artifactory API key
     required: true
-    default: $ART_KEY
+    default: ${{ secrets.art_key }}
 
   check-creds:
     description: Optional check credentials status

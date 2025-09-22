@@ -4,12 +4,12 @@ inputs:
   username:
     description: Artifactory username
     required: false  # Note `required` doesn't actually do anything: https://github.com/actions/runner/issues/1070
-    default: ${{ env.ART_USER }}
+    default: $ART_USER
 
   api-key:
     description: Artifactory API key
     required: true
-    default: ${{ env.ART_KEY }}
+    default: $ART_KEY
 
 runs:
   using: "composite"

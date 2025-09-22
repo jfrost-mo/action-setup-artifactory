@@ -51,12 +51,14 @@ jobs:
   test-no-username:
     runs-on: ubuntu-latest
     timeout-minutes: 4
+    env:
+      ART_TOKEN: "this_is_an_access_token_no_username_required"
     steps:
       - name: Run action
         #uses: MetOffice/action-setup-artifactory@main
         uses: MetOffice/action-setup-artifactory@optional_username
         with:
-          api-key: "this_is_an_access_token_no_username_required"
+          api-key: ${{ env.ART_TOKEN }}
 
       - name: Debug netrc
         shell: bash
@@ -65,6 +67,27 @@ jobs:
           echo "---------------------------------------"
           cat ~/.netrc
           echo "---------------------------------------"
+
+      - name: Assert netrc correct
+        shell: bash
+        run: |
+          if (( $(cat ~/.netrc | wc -l) != 2 )); then
+            echo "Wrong number of lines in .netrc file!";
+            exit 1
+          fi
+          
+          if grep "\<login\>" ~/.netrc; then
+            echo "Unexpected 'login' entry found in ~/.netrc file."
+            exit 1;
+          fi
+          
+          if ! grep -e "machine metoffice.jfrog.io" ~/.netrc; then
+            echo "Missing correct 'machine' field from ~/.netrc file."
+          fi
+
+          if ! grep -e "\<password\> *${{ env.ART_TOKEN }}" ~/.netrc; then
+            echo "Missing correct 'password' field from ~/.netrc file."
+          fi
 
 #      - name: Setup Python
 #        uses: actions/setup-python@v2

@@ -1,5 +1,6 @@
 name: Test
 on:
+  pull_request:
   push:
     branches:
       - main
@@ -43,3 +44,28 @@ jobs:
 
       - name: Install Package
         run: pip install cloudteam-pythontools
+
+  test-no-username:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Run action
+        uses: MetOffice/action-setup-artifactory@main
+        with:
+          api-key: "this_is_an_access_token_no_username_required"
+
+      - name: Debug netrc
+        shell: bash
+        run: |
+          echo "Contents of netrc file:"
+          echo "---------------------------------------"
+          cat ~/.netrc
+          echo "---------------------------------------"
+
+#      - name: Setup Python
+#        uses: actions/setup-python@v2
+#        with:
+#          python-version: "3.8"
+#
+#      - name: Install Package
+#        run: pip install cloudteam-pythontools

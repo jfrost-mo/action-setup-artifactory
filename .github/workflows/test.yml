@@ -39,7 +39,6 @@ jobs:
         #uses: MetOffice/action-setup-artifactory@main
         uses: MetOffice/action-setup-artifactory@optional_username
 
-
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
@@ -51,8 +50,6 @@ jobs:
   test-no-username:
     runs-on: ubuntu-latest
     timeout-minutes: 4
-    env:
-      ART_TOKEN: "this_is_an_access_token_no_username_required"
     steps:
       - name: Run action
         #uses: MetOffice/action-setup-artifactory@main
@@ -67,12 +64,12 @@ jobs:
             echo "Wrong number of lines in .netrc file!";
             exit 1
           fi
-          
+
           if grep "\<login\>" ~/.netrc; then
             echo "Unexpected 'login' entry found in ~/.netrc file."
             exit 1;
           fi
-          
+
           if ! grep -e "machine metoffice.jfrog.io" ~/.netrc; then
             echo "Missing correct 'machine' field from ~/.netrc file."
           fi

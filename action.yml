@@ -41,7 +41,7 @@ runs:
         fi
 
     - name: Configure conda-forge channel
-      if: ${{ inputs.setup-conda-forge }}
+      if: ${{ inputs.setup-conda-forge == 'true' }}
       shell: bash
       run: |
         conda config --add channels conda-forge

@@ -44,3 +44,41 @@ jobs:
 
       - name: Install Package
         run: pip install cloudteam-pythontools
+
+  test-no-username:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Run action
+        uses: MetOffice/action-setup-artifactory@main
+        with:
+          api-key: ${{ secrets.art_access_token }}
+
+      - name: Assert netrc looks correct
+        shell: bash
+        run: |
+          if (( $(cat ~/.netrc | wc -l) != 2 )); then
+            echo "Wrong number of lines in .netrc file!";
+            exit 1
+          fi
+
+          if grep "\<login\>" ~/.netrc; then
+            echo "Unexpected 'login' entry found in ~/.netrc file."
+            exit 1;
+          fi
+
+          if ! grep -e "machine metoffice.jfrog.io" ~/.netrc; then
+            echo "Missing correct 'machine' field from ~/.netrc file."
+          fi
+
+          if ! grep -e "\<password\> *${{ secrets.ART_ACCESS_TOKEN }}" ~/.netrc; then
+            echo "Missing correct 'password' field from ~/.netrc file."
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+      - name: Install Package
+        run: pip install cloudteam-pythontools

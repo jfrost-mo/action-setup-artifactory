@@ -28,10 +28,11 @@ Usage
     # Default: ${{ secrets.ART_KEY}}
     api-key: ''
 
-    # Optional flag to setup ``conda-forge`` as the default channel. This removes
-    # any other channels that are not ``conda-forge`` (such as ``defaults``) to avoid
-    # unintentional use of any Anaconda licenced channels. This option also
-    # sets strict channel priority.
+    # Optional flag to use ``conda-forge`` as a conda channel in preference to the
+    # Anaconda "defaults" channels. Enabling this option will also remove any
+    # channels matching ``conda-main``, ``conda-r``, ``conda-free`` or ``defaults``
+    # to avoid unintentional use of any Anaconda licenced channels. Also sets
+    # strict channel priority.
     # Default: false
     setup-conda-forge: true/false
 ```

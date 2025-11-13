@@ -12,7 +12,7 @@ inputs:
     default: $ART_KEY
 
   setup-conda-forge:
-    description: Whether to set up conda-forge as a default channel in conda
+    description: Add conda-forge as a channel in preference to Anaconda defaults
     required: false
     default: false
 
@@ -45,13 +45,17 @@ runs:
       if: ${{ inputs.setup-conda-forge == 'true' }}
       shell: bash
       run: |
+        DEFAULT_CHANNELS="conda-main conda-free conda-r defaults"
+
+        # Add the conda-main channel:
         conda config --add channels conda-forge
         conda config --set channel_priority strict
-        # Remove any channels that are not conda-forge:
-        channels=$(conda config --show channels --json | jq -r '.channels[]')
-        for channel in $channels; do
-          if [ "$channel" != "conda-forge" ]; then
-            conda config --system --remove channels $channel
+
+        # Remove any Anaconda "defaults" channels:
+        CHANNELS=$(conda config --show channels --json | jq -r '.channels[]')
+        for DEFAULT in ${DEFAULT_CHANNELS}; do
+          if echo "${CHANNELS}" | grep -q -x "\<${DEFAULT}\>" ; then
+            conda config --remove channels ${DEFAULT}
           fi
         done
         conda config --show channels

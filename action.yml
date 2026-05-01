@@ -4,15 +4,21 @@ author: Payton Leedham
 inputs:
   username:
     description: Artifactory username
-    required: true
+    required: false  # Note `required` doesn't actually do anything: https://github.com/actions/runner/issues/1070
+
   api-key:
     description: Artifactory API key
     required: true
+
   check-creds:
     description: Optional check credentials status
     required: true
     default: false
 
+  setup-conda-forge:
+    description: Add conda-forge as a channel in preference to Anaconda defaults
+    required: false
+    default: false
 
 runs:
   using: "composite"
@@ -20,11 +26,12 @@ runs:
     - name: Create netrc file
       shell: bash
       run: |
-        cat << EOF > ~/.netrc
-        machine metoffice.jfrog.io
-        login ${{ inputs.username }}
-        password ${{ inputs.api-key }}
-        EOF
+        echo "machine metoffice.jfrog.io" >> ~/.netrc
+        # If username is empty don't add login entry to .netrc (assumes Access Token):
+        if [[ -s "${{ inputs.username }}" ]]; then
+          echo "  login ${{ inputs.username }}" >> ~/.netrc
+        fi
+        echo "  password ${{ inputs.api-key }}" >> ~/.netrc
 
     - name: Add the conda channel_alias for Artifactory
       shell: bash
@@ -37,6 +44,27 @@ runs:
             echo "INFO: Adding channel_alias to ~/.condarc"
             echo ${CHANNEL_ALIAS_STR} >> ~/.condarc
         fi
+
+    - name: Configure conda-forge channel
+      if: ${{ inputs.setup-conda-forge == 'true' }}
+      shell: bash
+      run: |
+        DEFAULT_CHANNELS="conda-main conda-free conda-r defaults"
+
+        # Add the conda-main channel:
+        conda config --add channels conda-forge
+        conda config --set channel_priority strict
+
+        # Remove any Anaconda "defaults" channels:
+        CHANNELS=$(conda config --show channels --json | jq -r '.channels[]')
+        for DEFAULT in ${DEFAULT_CHANNELS}; do
+          if echo "${CHANNELS}" | grep -q -x "\<${DEFAULT}\>" ; then
+            # Make sure we remove from both system and user configs:
+            conda config --system --remove channels ${DEFAULT} 2> /dev/null || true
+            conda config --remove channels ${DEFAULT} 2> /dev/null || true
+          fi
+        done
+        conda config --show channels
 
     - name: Create pip file
       shell: bash

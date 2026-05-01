@@ -20,12 +20,15 @@ jobs:
       - name: Install Package
         run: pip install cloudteam-pythontools
 
-  test-use-defaults:
+  test-no-defaults:
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
       - name: Run action
         uses: MetOffice/action-setup-artifactory@main
+        with:
+          username: ${{ secrets.art_user }}
+          api-key: ${{ secrets.art_key }}
       - name: Setup Python
         uses: actions/setup-python@v2
         with:

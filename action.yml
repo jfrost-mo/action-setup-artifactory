@@ -1,6 +1,13 @@
 name: Setup Artifactory
+description: GitHub Action to configure Conda and pip to use Met Office Artifactory.
 author: Payton Leedham
 inputs:
+  username:
+    description: Artifactory username
+    required: true
+  api-key:
+    description: Artifactory API key
+    required: true
   check-creds:
     description: Optional check credentials status
     required: true
@@ -15,8 +22,8 @@ runs:
       run: |
         cat << EOF > ~/.netrc
         machine metoffice.jfrog.io
-        login ${{ secrets.art_user }}
-        password ${{ secrets.art_key }}
+        login ${{ inputs.username }}
+        password ${{ inputs.api-key }}
         EOF
 
     - name: Add the conda channel_alias for Artifactory

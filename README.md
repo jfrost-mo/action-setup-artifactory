@@ -18,20 +18,23 @@ Usage
 - uses: MetOffice/action-setup-artifactory@v1
   with:
     # Artifactory username. This is usually a user/team email address
-    # Default: ${{ secrets.ART_USER}}
     # Note: For Artifactory Access Tokens (no associated username) do not specify
     # this field or leave it blank.
     username: ''
 
     # Artifactory API key. This can be obtained by logging into Artifactory
     # with either username/password or SSO.
-    # Default: ${{ secrets.ART_KEY}}
     api-key: ''
+
+    # Authentication credentials check.
+    # Confirms that username and api-key are active and working.
+    # Default: false
+    check-creds: true/false
 
     # Optional flag to use ``conda-forge`` as a conda channel in preference to the
     # Anaconda "defaults" channels. Enabling this option will also remove any
     # channels matching ``conda-main``, ``conda-r``, ``conda-free`` or ``defaults``
-    # to avoid unintentional use of any Anaconda licenced channels. Also sets
+    # to avoid unintentional use of any Anaconda licensed channels. Also sets
     # strict channel priority.
     # Default: false
     setup-conda-forge: true/false
@@ -40,28 +43,8 @@ Usage
 Examples
 --------
 
-Configure Artifactory using github secrets `ART_USER` and `ART_KEY`:
-
-```yaml
-jobs:
-  my-job:
-    steps:
-
-        # Using default secrets for this action, so no need to specify
-        # username or api-key
-      - name: Set up Artifactory connection
-        uses: MetOffice/action-setup-artifactory@v1
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: "3.8"
-
-      - name: Install Package from Artifactory
-        run: pip install some-package-on-artifactory
-```
-
-Configure Artifactory using differently named github secrets:
+Configure Artifactory using github secrets `ART_USER` and `ART_KEY` and
+and check authentication credentials are active:
 
 ```yaml
 jobs:
@@ -73,6 +56,7 @@ jobs:
         with:
           username: ${{ secrets.USERNAME }}
           api-key: ${{ secrets.API_KEY }}
+          check-creds: true
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -93,6 +77,7 @@ jobs:
         uses: MetOffice/action-setup-artifactory@v1
         with:
           api-key: ${{ secrets.ACCESS_TOKEN }}
+          check-creds: true
 
       - name: Set up Python
         uses: actions/setup-python@v2

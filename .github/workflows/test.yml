@@ -6,42 +6,37 @@ on:
       - main
 
 jobs:
-  test-no-default:
+
+  test-user-creds:
     runs-on: ubuntu-latest
     timeout-minutes: 4
-    env:
-      ART_USER: ${{ secrets.art_user }}
-      ART_KEY: ${{ secrets.art_key }}
     steps:
       - name: Run action
         uses: MetOffice/action-setup-artifactory@main
         with:
-          username: $ART_USER
-          api-key: $ART_KEY
-
+          username: ${{ secrets.art_user }}
+          api-key: ${{ secrets.art_key }}
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
           python-version: "3.8"
-
       - name: Install Package
         run: pip install cloudteam-pythontools
 
-  test-use-defaults:
+  test-with-check-creds:
     runs-on: ubuntu-latest
     timeout-minutes: 4
-    env:
-      ART_USER: ${{ secrets.art_user }}
-      ART_KEY: ${{ secrets.art_key }}
     steps:
       - name: Run action
         uses: MetOffice/action-setup-artifactory@main
-
+        with:
+          username: ${{ secrets.art_user }}
+          api-key: ${{ secrets.art_key }}
+          check-creds: true
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
           python-version: "3.8"
-
       - name: Install Package
         run: pip install cloudteam-pythontools
 
@@ -53,6 +48,7 @@ jobs:
         uses: MetOffice/action-setup-artifactory@main
         with:
           api-key: ${{ secrets.art_access_token }}
+          check-creds: true
 
       - name: Assert netrc looks correct
         shell: bash

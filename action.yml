@@ -23,6 +23,30 @@ inputs:
 runs:
   using: "composite"
   steps:
+
+    - name: Get condarc locations
+      shell: bash
+      run: |
+        SOURCES=""
+        if [ command -v conda >/dev/null 2>&1 ]; then
+          SOURCES="${SOURCES} $(conda config --show-sources --json | jq -r 'keys[]')"
+        fi
+
+        if [ -n "${MAMBA_EXE}" ]; then
+          # not as clean as Conda output, not JSON option:
+          SOURCES="${SOURCES} $(${MAMBA_EXE} config sources | tail -n+2)"
+        fi
+
+        # Also add user ~/.condarc, if it exists:
+        if [ -f ${HOME}/.condarc ]; then
+          SOURCES="${SOURCES} ${HOME}/.condarc"
+        fi
+
+        echo "The following condarc sources will be updated:"
+        echo "${SOURCES}"
+
+        echo "CONDARC_SOURCES=${SOURCES}" >> $GITHUB_ENV
+
     - name: Create netrc file
       shell: bash
       run: |
@@ -36,14 +60,16 @@ runs:
     - name: Add the conda channel_alias for Artifactory
       shell: bash
       run: |
-        CHANNEL_ALIAS_STR="channel_alias: https://metoffice.jfrog.io/metoffice/api/conda"
 
-        if grep "^channel_alias" ~/.condarc 2>/dev/null; then
-            echo "INFO: channel_alias already present in ~/.condarc"
-        else
-            echo "INFO: Adding channel_alias to ~/.condarc"
-            echo ${CHANNEL_ALIAS_STR} >> ~/.condarc
-        fi
+        CHANNEL_ALIAS_STR="channel_alias: https://metoffice.jfrog.io/metoffice/api/conda"
+        for CONDARC_FILE in ${CONDARC_SOURCES}; do
+          if grep "^channel_alias" ${CONDARC_FILE} 2>/dev/null; then
+            echo "INFO: channel_alias already present in ${CONDARC_FILE}"
+          else
+            echo "INFO: Adding channel_alias to ${CONDARC_FILE}"
+            echo ${CHANNEL_ALIAS_STR} >> ${CONDARC_FILE}
+          fi
+        done
 
     - name: Configure conda-forge channel
       if: ${{ inputs.setup-conda-forge == 'true' }}
@@ -51,22 +77,31 @@ runs:
       run: |
         DEFAULT_CHANNELS="conda-main conda-free conda-r defaults"
 
-        # Add the conda-main channel:
-        conda config --add channels conda-forge
-        conda config --set channel_priority strict
+        for CONDARC_FILE in ${CONDARC_SOURCES}; do
 
-        # Remove any Anaconda "defaults" channels:
-        CHANNELS=$(conda config --show channels --json | jq -r '.channels[]')
-        for DEFAULT in ${DEFAULT_CHANNELS}; do
-          if echo "${CHANNELS}" | grep -q -x "\<${DEFAULT}\>" ; then
-            # Make sure we remove from both system and user configs:
-            conda config --system --remove channels ${DEFAULT} 2> /dev/null || true
-            conda config --remove channels ${DEFAULT} 2> /dev/null || true
+          if [ ! -f "${CONDARC_FILE}" ]; then
+            echo "INFO: ${CONDARC_FILE} does not exist, skipping..."
+            continue
           fi
-        done
-        conda config --show channels
 
-    - name: Create pip file
+          # Add the conda-forge channel:
+          if yq -e '.channels | index("conda-forge")' ${CONDARC_FILE} >/dev/null 2>&1; then
+            echo "INFO: conda-forge channel already present in ${CONDARC_FILE}"
+          else
+            echo "INFO: Adding conda-forge channel to ${CONDARC_FILE}"
+            yq -i -Y '.channels = ["conda-forge"] + .channels' ${CONDARC_FILE}
+          fi
+
+          # remove any of the defaults channels from the config file:
+          for DEFAULT in ${DEFAULT_CHANNELS}; do
+            if yq -e --arg DEFAULT "${DEFAULT}" '.channels | index($DEFAULT)' ${CONDARC_FILE} >/dev/null 2>&1; then
+              echo "INFO: Removing default channel ${DEFAULT} from ${CONDARC_FILE}"
+              yq -i -Y --arg DEFAULT "${DEFAULT}" '.channels |= map(select(. != $DEFAULT))' ${CONDARC_FILE}
+            fi
+          done
+        done
+
+    - name: Create pip configuration file
       shell: bash
       run: |
         mkdir -p ~/.config/pip

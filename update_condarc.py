@@ -4,27 +4,21 @@ import yaml
 
 ARTIFACTORY_URL = "https://metoffice.jfrog.io/metoffice/api/conda"
 
-DEFAULTS_CHANNELS = [
-    "conda-main",
-    "conda-free",
-    "conda-r",
-    "conda-msys2",
-    "defaults"
-]
+DEFAULTS_CHANNELS = ["conda-main", "conda-free", "conda-r", "conda-msys2", "defaults"]
 
 
 def remove_defaults(condarc: dict) -> None:
-    """ Remove any Anaconda default channels. """
+    """Remove any Anaconda default channels."""
     if "channels" in condarc:
         condarc["channels"] = list(
             filter(
-                lambda channel: channel not in DEFAULTS_CHANNELS,
-                condarc["channels"]
+                lambda channel: channel not in DEFAULTS_CHANNELS, condarc["channels"]
             )
         )
 
+
 def add_conda_forge(condarc: dict) -> None:
-    """ Add the conda-forge channel and strict channel priority. """
+    """Add the conda-forge channel and strict channel priority."""
     current_channels = condarc.get("channels", [])
     if "conda-forge" not in current_channels:
         print("[INFO] Adding conda-forge channel")
@@ -34,20 +28,22 @@ def add_conda_forge(condarc: dict) -> None:
 
 
 def add_artifactory_alias(condarc: dict) -> None:
-    """ Add the Artifactory channel alias. """
+    """Add the Artifactory channel alias."""
     if "channel_alias" in condarc:
-        print("[WARN] Overriding previous channel_alias: "
-            f"{condarc['channel_alias']}"
-        )
+        print(f"[WARN] Overriding previous channel_alias: {condarc['channel_alias']}")
     condarc["channel_alias"] = ARTIFACTORY_URL
+
 
 if __name__ == "__main__":
     """ Entry point from command line. """
     parser = argparse.ArgumentParser(description="Update condarc file")
     parser.add_argument("condarc_file", help="Path to the condarc file")
-    parser.add_argument("--setup-conda-forge", action="store_true",
-                        default=False,
-                        help="Add conda-forge channel and remove defaults)")
+    parser.add_argument(
+        "--setup-conda-forge",
+        action="store_true",
+        default=False,
+        help="Add conda-forge channel and remove defaults)",
+    )
     args = parser.parse_args()
 
     condarc_file = args.condarc_file
@@ -65,4 +61,3 @@ if __name__ == "__main__":
     # write out:
     with open(condarc_file, "w") as fd:
         yaml.safe_dump(condarc, fd)
-

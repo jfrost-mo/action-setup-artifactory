@@ -50,6 +50,7 @@ jobs:
         with:
           api-key: ${{ secrets.art_access_token }}
           check-creds: true
+          setup-conda-forge: true
 
       - name: Assert netrc looks correct
         shell: bash

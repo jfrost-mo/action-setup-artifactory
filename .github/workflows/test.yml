@@ -141,7 +141,7 @@ jobs:
         run: pip install cloudteam-pythontools
 
   test-micromamba:
-    runs-on: ubuntu-26.04  # no conda installed, so we can test using micromamba
+    runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
       - name: Install micromamba

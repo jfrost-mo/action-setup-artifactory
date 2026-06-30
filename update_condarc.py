@@ -42,7 +42,7 @@ if __name__ == "__main__":
         "--setup-conda-forge",
         action="store_true",
         default=False,
-        help="Add conda-forge channel and remove defaults)",
+        help="Add conda-forge channel and remove defaults",
     )
     args = parser.parse_args()
 

@@ -49,8 +49,16 @@ if __name__ == "__main__":
     condarc_file = args.condarc_file
     setup_conda_forge = args.setup_conda_forge
 
-    with open(condarc_file, "r") as fd:
-        condarc = yaml.safe_load(fd)
+    try:
+        with open(condarc_file, "r", encoding="utf-8") as fd:
+            condarc = yaml.safe_load(fd) or {}
+    except FileNotFoundError:
+        condarc = {}
+
+    if not isinstance(condarc, dict):
+        raise ValueError(
+            f"Expected YAML mapping (dict) in {condarc_file}, got {type(condarc).__name__}"
+        )
 
     # update the file
     add_artifactory_alias(condarc)

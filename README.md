@@ -66,7 +66,7 @@ and updated at ``${HOME}/.condarc``.
 
 ### Examples
 
-Configure Artifactory using github secrets `ART_USER` and `ART_KEY` and
+Configure Artifactory using credentials stored as GitHub secrets
 and check authentication credentials are active:
 
 ```yaml

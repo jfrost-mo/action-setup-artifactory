@@ -56,12 +56,20 @@ runs:
         # Sanitize: replace `~` with `$HOME` and get rid of newlines:
         #  - `sed "s|~|${HOME}|g"` : replaces ~ with the value of $HOME
         #  - `tr '\n' ' '` : replaces newlines with spaces
-        SOURCES=$(echo "${SOURCES}" | sed "s|~|${HOME}|g" | tr '\n' ' ')
+        #  - `sed "s| *$||g"` : removes trailing whitespace
+        SOURCES=$(echo "${SOURCES}" | sed "s|~|${HOME}|g" | tr '\n' ' ' | sed "s| *$||g")
 
-        # add user ${HOME}/.condarc, if it exists and not already present:
-        if (! echo "${SOURCES}" | grep "${HOME}/.condarc") && (test -f ${HOME}/.condarc); then 
-          SOURCES="${SOURCES} ${HOME}/.condarc"
-          echo "Added HOME/USER CONDARC: ${SOURCES}"
+        # If no sources found, add a default source of ${HOME}/.condarc:
+        if [ -z "${SOURCES}" ]; then
+          echo "[INFO] Found no condarc source, adding default source of ${HOME}/.condarc"
+          SOURCES="${HOME}/.condarc"
+          touch ${SOURCES}
+        else
+          # Otherwise, add user ${HOME}/.condarc if it exists and not already listed in SOURCES:
+          if (! echo "${SOURCES}" | grep -q "${HOME}/.condarc") && (test -f ${HOME}/.condarc); then
+            SOURCES="${SOURCES} ${HOME}/.condarc"
+            echo "Added HOME/USER CONDARC: ${SOURCES}"
+          fi
         fi
 
         echo "The following condarc sources will be updated:"

@@ -41,8 +41,8 @@ runs:
           # The JSON output of Conda config includes some files that are not condarc files.
           # We filter these out:
           #  - `jq -r 'keys[]'` : gets the keys of the JSON object, which are the file paths
-          #  - `egrep '/\.?condarc$'` : filters to only include paths that end with .condarc or condarc
-          SOURCES="${SOURCES} $(conda config --show-sources --json | jq -r 'keys[]' | egrep '/\.?condarc$')"
+          #  - `grep -E '/\.?condarc$'` : filters to only include paths that end with .condarc or condarc
+          SOURCES="${SOURCES} $(conda config --show-sources --json | jq -r 'keys[]' | grep -E '/\.?condarc$')"
           echo "Added Conda CONDARC: ${SOURCES}"
         fi
 

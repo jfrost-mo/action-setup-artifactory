@@ -17,7 +17,7 @@ If no Conda configuration files (``**/.condarc``) are found, one will be created
 and updated at ``${HOME}/.condarc``.
 
 
-## Whats New
+## What's New
 
 ### v2
  - Adds support for configuring ``micromamba`` as an alternative to

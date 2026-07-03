@@ -1,5 +1,6 @@
 name: Test
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches:
@@ -50,6 +51,7 @@ jobs:
         with:
           api-key: ${{ secrets.art_access_token }}
           check-creds: true
+          setup-conda-forge: true
 
       - name: Assert netrc looks correct
         shell: bash
@@ -72,13 +74,11 @@ jobs:
             echo "Missing correct 'password' field from ~/.netrc file."
           fi
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-
-      - name: Install Package
-        run: pip install cloudteam-pythontools
+      - name: Install conda package
+        shell: bash
+        run: |
+          conda create -n test-env --no-deps zlib
+          conda list -n test-env --explicit
 
   test-conda-forge:
     runs-on: ubuntu-latest

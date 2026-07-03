@@ -7,11 +7,11 @@ inputs:
     required: false  # Note `required` doesn't actually do anything: https://github.com/actions/runner/issues/1070
 
   api-key:
-    description: Artifactory API key
+    description: Artifactory API key or Identity Token
     required: true
 
   check-creds:
-    description: Optional check credentials status
+    description: Whether to check credentials validity
     required: true
     default: false
 
@@ -41,8 +41,8 @@ runs:
           # The JSON output of Conda config includes some files that are not condarc files.
           # We filter these out:
           #  - `jq -r 'keys[]'` : gets the keys of the JSON object, which are the file paths
-          #  - `egrep '/\.?condarc$'` : filters to only include paths that end with .condarc or condarc
-          SOURCES="${SOURCES} $(conda config --show-sources --json | jq -r 'keys[]' | egrep '/\.?condarc$')"
+          #  - `grep -E '/\.?condarc$'` : filters to only include paths that end with .condarc or condarc
+          SOURCES="${SOURCES} $(conda config --show-sources --json | jq -r 'keys[]' | grep -E '/\.?condarc$')"
           echo "Added Conda CONDARC: ${SOURCES}"
         fi
 
@@ -126,8 +126,8 @@ runs:
         # If connection and authentication work, then expect a successful response.
         if curl -n -I -sSf --silent --output /dev/null "${url}" ; then
           # connection or authentication problems
-          echo "Check authentication file, password expiry or user settings"
+          echo "Artifactory could not be accessed. Check authentication file, token expiry or user settings"
           exit 1
         else
-          echo "Artifactory connection ok, continuing"
+          echo "Artifactory accessible, continuing"
         fi

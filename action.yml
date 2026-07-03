@@ -1,6 +1,6 @@
 name: Setup Artifactory
 description: GitHub Action to configure Conda and pip to use Met Office Artifactory.
-author: Payton Leedham
+author: Payton Leedham, Chris Bunney
 inputs:
   username:
     description: Artifactory username
@@ -23,52 +23,91 @@ inputs:
 runs:
   using: "composite"
   steps:
+
+    - name: Get condarc locations
+      shell: bash
+      run: |
+        # Get condarc file sources, as reported by the tooling.
+        # We need to do this as:
+        #   1. Not all tools default to using ~/.condarc, e.g. the setup-micromamba action
+        #      uses a different location for its configuration file.
+        #   2. There may be several configuration files, e.g. a system-wide configuration file,
+        #      and a user configuration file.
+        # The best way to get the list of configuration files is to ask the tooling itself.
+        SOURCES=""
+
+        # Check if conda is installed and get its config sources
+        if command -v conda >/dev/null 2>&1; then
+          # The JSON output of Conda config includes some files that are not condarc files.
+          # We filter these out:
+          #  - `jq -r 'keys[]'` : gets the keys of the JSON object, which are the file paths
+          #  - `egrep '/\.?condarc$'` : filters to only include paths that end with .condarc or condarc
+          SOURCES="${SOURCES} $(conda config --show-sources --json | jq -r 'keys[]' | egrep '/\.?condarc$')"
+          echo "Added Conda CONDARC: ${SOURCES}"
+        fi
+
+        # Check if micromamba is installed and get its config sources
+        if [ -n "${MAMBA_EXE}" ]; then
+          # Micromamba doesn't have a nice JSON output, so we just take the output of
+          # the `config sources` command and skip the first line (which is a header):
+          SOURCES="${SOURCES} $(${MAMBA_EXE} config sources | tail -n+2)"
+        fi
+
+        # Sanitize: replace `~` with `$HOME` and get rid of newlines:
+        #  - `sed "s|~|${HOME}|g"` : replaces ~ with the value of $HOME
+        #  - `tr '\n' ' '` : replaces newlines with spaces
+        #  - `sed "s| *$||g"` : removes trailing whitespace
+        SOURCES=$(echo "${SOURCES}" | sed "s|~|${HOME}|g" | tr '\n' ' ' | sed "s| *$||g")
+
+        # If no sources found, add a default source of ${HOME}/.condarc:
+        if [ -z "${SOURCES}" ]; then
+          echo "[INFO] Found no condarc source, adding default source of ${HOME}/.condarc"
+          SOURCES="${HOME}/.condarc"
+          touch ${SOURCES}
+        else
+          # Otherwise, add user ${HOME}/.condarc if it exists and not already listed in SOURCES:
+          if (! echo "${SOURCES}" | grep -q "${HOME}/.condarc") && (test -f ${HOME}/.condarc); then
+            SOURCES="${SOURCES} ${HOME}/.condarc"
+            echo "Added HOME/USER CONDARC: ${SOURCES}"
+          fi
+        fi
+
+        echo "The following condarc sources will be updated:"
+        echo "${SOURCES}"
+
+        echo "CONDARC_SOURCES=${SOURCES}" >> $GITHUB_ENV
+
     - name: Create netrc file
       shell: bash
       run: |
+        # Create netrc file
         echo "machine metoffice.jfrog.io" >> ~/.netrc
         # If username is empty don't add login entry to .netrc (assumes Access Token):
-        if [[ -s "${{ inputs.username }}" ]]; then
+        if [[ -n "${{ inputs.username }}" ]]; then
           echo "  login ${{ inputs.username }}" >> ~/.netrc
         fi
         echo "  password ${{ inputs.api-key }}" >> ~/.netrc
 
-    - name: Add the conda channel_alias for Artifactory
+    - name: Configure the condarc file
       shell: bash
       run: |
-        CHANNEL_ALIAS_STR="channel_alias: https://metoffice.jfrog.io/metoffice/api/conda"
-
-        if grep "^channel_alias" ~/.condarc 2>/dev/null; then
-            echo "INFO: channel_alias already present in ~/.condarc"
-        else
-            echo "INFO: Adding channel_alias to ~/.condarc"
-            echo ${CHANNEL_ALIAS_STR} >> ~/.condarc
+        # Configure the condarc file
+        # We do this by modifying the condarc files directly rather than using 
+        # `conda config` or `micromamba config` commands, as these commands don't always
+        # modify the correct condarc file when writing configuration files compared to 
+        # reading them. This is particularly true for the micromamba.
+        if ${{ inputs.setup-conda-forge }}; then
+          FLAGS="--setup-conda-forge"
         fi
-
-    - name: Configure conda-forge channel
-      if: ${{ inputs.setup-conda-forge == 'true' }}
-      shell: bash
-      run: |
-        DEFAULT_CHANNELS="conda-main conda-free conda-r defaults"
-
-        # Add the conda-main channel:
-        conda config --add channels conda-forge
-        conda config --set channel_priority strict
-
-        # Remove any Anaconda "defaults" channels:
-        CHANNELS=$(conda config --show channels --json | jq -r '.channels[]')
-        for DEFAULT in ${DEFAULT_CHANNELS}; do
-          if echo "${CHANNELS}" | grep -q -x "\<${DEFAULT}\>" ; then
-            # Make sure we remove from both system and user configs:
-            conda config --system --remove channels ${DEFAULT} 2> /dev/null || true
-            conda config --remove channels ${DEFAULT} 2> /dev/null || true
-          fi
+        for CONDARC_FILE in ${CONDARC_SOURCES}; do
+          echo "INFO: Updating ${CONDARC_FILE}"
+          python3 "${{ github.action_path }}/update_condarc.py" "${CONDARC_FILE}" ${FLAGS:-}
         done
-        conda config --show channels
 
-    - name: Create pip file
+    - name: Create pip configuration file
       shell: bash
       run: |
+        # Create pip configuration file
         mkdir -p ~/.config/pip
         cat << EOF > ~/.config/pip/pip.conf
         [global]
@@ -80,17 +119,19 @@ runs:
       shell: bash
       if: ${{ inputs.check-creds == 'true' }}
       run: |
+        # Check Artifactory authentication
         echo "Testing authentication to Artifactory"
-        # Check  and capture numerical status code
+
+        # Check and capture numerical status code
         url="https://metoffice.jfrog.io/metoffice/api/conda/conda-forge"
         status=$(curl -n -I --write-out %{http_code} --silent --output /dev/null ${url}) 
-        echo "MO JFrog Artifactory returned: ${status}"
+
         # if connection and authentication work, then expect a 200 code
         if [ $status != "200" ]; then
-        # connection or authentication problems
-        echo "Check authentication file, password expiry or user settings"
-        exit 1
+          # connection or authentication problems
+          echo "Check authentication file, password expiry or user settings"
+          exit 1
         else
-        echo "Server returned: ${status}"
-        echo "Artifactory connection ok, continuing"
+          echo "Server returned: ${status}"
+          echo "Artifactory connection ok, continuing"
         fi

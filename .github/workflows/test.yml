@@ -18,9 +18,9 @@ jobs:
           username: ${{ secrets.art_user }}
           api-key: ${{ secrets.art_key }}
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.8"
+          python-version: "3.12"
       - name: Install Package
         run: pip install cloudteam-pythontools
 
@@ -35,9 +35,9 @@ jobs:
           api-key: ${{ secrets.art_key }}
           check-creds: true
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.8"
+          python-version: "3.12"
       - name: Install Package
         run: pip install cloudteam-pythontools
 
@@ -108,10 +108,17 @@ jobs:
 
           CHANNELS=$(conda config --show channels --json | jq -r '.channels[]')
 
+          echo "[INFO] Conda channels list:"
+          echo "${CHANNELS}"
+          echo "[INFO] ~/.condarc"
+          cat ~/.condarc
+          echo "[INFO] conda config sources:"  
+          conda config --show-sources        
+
           # Check default channels have been removed:
           for DEFAULT in ${DEFAULT_CHANNELS}; do
             if echo "${CHANNELS}" | grep -x -q "\<${DEFAULT}\>" ; then
-                echo "Found unexpected default channel '${DEFAULT}' in conda channels list."
+                echo "[FAIL] Found unexpected default channel '${DEFAULT}' in conda channels list."
                 exit 1
             fi
           done
@@ -119,15 +126,52 @@ jobs:
           # check expected channels are still present:
           for EXPECTED in ${EXPECTED_CHANNELS}; do
             if ! echo "${CHANNELS}" | grep -x -q "\<${EXPECTED}\>" ; then
-              echo "Missing '${EXPECTED}' channel in conda channel list."
+              echo "[FAIL] Missing '${EXPECTED}' channel in conda channel list."
               exit 1
             fi
           done
 
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.8"
+          python-version: "3.12"
 
       - name: Install Package
         run: pip install cloudteam-pythontools
+
+  test-micromamba:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Install micromamba
+        uses: mamba-org/setup-micromamba@d7c9bd84e824b79d2af72a2d4196c7f4300d3476  # v3.0.0
+        with:
+          condarc: |
+            channels:
+              - conda-forge
+              - conda-main
+              - conda-free
+              - conda-r
+              - defaults
+              - conda-mo-internal
+
+      - name: Run action
+        uses: MetOffice/action-setup-artifactory@main
+        with:
+          username: ${{ secrets.art_user }}
+          api-key: ${{ secrets.art_key }}
+          check-creds: true
+          setup-conda-forge: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Show mamba config
+        run: micromamba config list
+        shell: bash
+
+      - name: Install Package
+        shell: bash
+        run: micromamba create -n test-env --no-deps zlib

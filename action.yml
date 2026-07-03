@@ -81,7 +81,7 @@ runs:
       shell: bash
       env:
         username: ${{ inputs.username }}
-        api-key: ${{ inputs.api-key }}
+        api_key: ${{ inputs.api-key }}
       run: |
         # Create netrc file
         echo "machine metoffice.jfrog.io" >> ~/.netrc
@@ -89,12 +89,12 @@ runs:
         if [[ -n "${username}" ]]; then
           echo "  login ${username}" >> ~/.netrc
         fi
-        echo "  password ${api-key}" >> ~/.netrc
+        echo "  password ${api_key}" >> ~/.netrc
 
     - name: Configure the condarc file
       shell: bash
       env:
-        setup-conda-forge: ${{ inputs.setup-conda-forge }}
+        setup_conda_forge: ${{ inputs.setup-conda-forge }}
         actions_path: ${{ github.action_path }}
       run: |
         # Configure the condarc file
@@ -102,7 +102,7 @@ runs:
         # `conda config` or `micromamba config` commands, as these commands don't always
         # modify the correct condarc file when writing configuration files compared to 
         # reading them. This is particularly true for the micromamba.
-        if ${setup-conda-forge}; then
+        if ${setup_conda_forge}; then
           FLAGS="--setup-conda-forge"
         fi
         for CONDARC_FILE in ${CONDARC_SOURCES}; do

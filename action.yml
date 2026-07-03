@@ -79,29 +79,35 @@ runs:
 
     - name: Create netrc file
       shell: bash
+      env:
+        username: ${{ inputs.username }}
+        api-key: ${{ inputs.api-key }}
       run: |
         # Create netrc file
         echo "machine metoffice.jfrog.io" >> ~/.netrc
         # If username is empty don't add login entry to .netrc (assumes Access Token):
-        if [[ -n "${{ inputs.username }}" ]]; then
-          echo "  login ${{ inputs.username }}" >> ~/.netrc
+        if [[ -n "${username}" ]]; then
+          echo "  login ${username}" >> ~/.netrc
         fi
-        echo "  password ${{ inputs.api-key }}" >> ~/.netrc
+        echo "  password ${api-key}" >> ~/.netrc
 
     - name: Configure the condarc file
       shell: bash
+      env:
+        setup-conda-forge: ${{ inputs.setup-conda-forge }}
+        actions_path: ${{ github.action_path }}
       run: |
         # Configure the condarc file
         # We do this by modifying the condarc files directly rather than using 
         # `conda config` or `micromamba config` commands, as these commands don't always
         # modify the correct condarc file when writing configuration files compared to 
         # reading them. This is particularly true for the micromamba.
-        if ${{ inputs.setup-conda-forge }}; then
+        if ${setup-conda-forge}; then
           FLAGS="--setup-conda-forge"
         fi
         for CONDARC_FILE in ${CONDARC_SOURCES}; do
           echo "INFO: Updating ${CONDARC_FILE}"
-          python3 "${{ github.action_path }}/update_condarc.py" "${CONDARC_FILE}" ${FLAGS:-}
+          python3 "${action_path}/update_condarc.py" "${CONDARC_FILE}" ${FLAGS:-}
         done
 
     - name: Create pip configuration file
